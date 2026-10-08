@@ -13,6 +13,7 @@ const app = express();
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const PORT = process.env.PORT || 3000;
 const ADMIN_GROUP_ID = process.env.ADMIN_GROUP_ID;
+const MINI_APP_URL = "https://t.me/meqraa_imamaljezery_bot/quran_academy";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -116,7 +117,20 @@ function getSession(uid) { return sessions.get(String(uid)) || null; }
 function setSession(uid, data) { sessions.set(String(uid), data); }
 function clearSession(uid) { sessions.delete(String(uid)); }
 
-/* ============ Menus ============ */
+/* ============ Reply Keyboard (أزرار ثابتة أسفل الشاشة) ============ */
+function replyKeyboard() {
+  return Markup.keyboard([
+    [
+      Markup.button.webApp("📖 المقرأة", MINI_APP_URL)
+    ],
+    [
+      Markup.button.text("📋 القائمة"),
+      Markup.button.text("👤 حسابي")
+    ]
+  ]).resize();
+}
+
+/* ============ Inline Menus ============ */
 function languageMenu() {
   return Markup.inlineKeyboard([
     [Markup.button.callback("🇪🇹 አማርኛ", "setlang_am")],
@@ -142,7 +156,12 @@ bot.start(async (ctx) => {
   const s = await getStudent(ctx);
   const lang = langOf(s);
   await ctx.reply(t(lang, "welcome", { name: s.first_name }), {
-    parse_mode: "HTML", ...mainMenu(lang, s.is_registered)
+    parse_mode: "HTML",
+    ...replyKeyboard()
+  });
+  await ctx.reply(t(lang, "homeWelcome"), {
+    parse_mode: "HTML",
+    ...mainMenu(lang, s.is_registered)
   });
 });
 
@@ -304,7 +323,6 @@ async function showRegConfirm(ctx, lang, d) {
   });
 }
 
-/* ============ Registration action handlers ============ */
 bot.action(/^reg_g_(male|female)$/, async (ctx) => {
   await ctx.answerCbQuery();
   const session = getSession(ctx.from.id);
@@ -410,7 +428,7 @@ bot.action("norania_lessons", async (ctx) => {
   await ctx.answerCbQuery();
   const s = await getStudent(ctx);
   const lang = langOf(s);
-  await ctx.editMessageText(t(lang, "lessonsTitle") + t(lang, "lessonsNote"), {
+  await ctx.editMessageText(t(lang, "lessonsTitle") + (t(lang, "lessonsNote") || ""), {
     parse_mode: "HTML",
     ...Markup.inlineKeyboard([
       [Markup.button.callback("1", "lesson_1"), Markup.button.callback("2", "lesson_2"), Markup.button.callback("3", "lesson_3")],
@@ -907,8 +925,31 @@ bot.command("broadcast", async (ctx) => {
 
 /* ============ Generic text ============ */
 bot.on("text", async (ctx) => {
+  const text = ctx.message.text.trim();
   const s = await getStudent(ctx);
   const lang = langOf(s);
+
+  if (text === "📋 القائمة") {
+    return ctx.reply(t(lang, "homeWelcome"), {
+      parse_mode: "HTML",
+      ...mainMenu(lang, s.is_registered)
+    });
+  }
+
+  if (text === "👤 حسابي") {
+    const date = s.reg_date ? new Date(s.reg_date).toLocaleDateString("ar-EG") : "—";
+    return ctx.reply(t(lang, "accountBody", {
+      name: s.first_name, code: s.reg_code || "—", age: s.age || "—",
+      gender: s.gender === "male" ? "ذكر" : s.gender === "female" ? "أنثى" : "—",
+      level: s.reading_level || "—", phone: s.phone || "—",
+      minutes: s.minutes, program: s.program || t(lang, "noProgram"),
+      days: s.schedule_days || "—", period: s.schedule_period || "—", reg_date: date
+    }), {
+      parse_mode: "HTML",
+      ...mainMenu(lang, s.is_registered)
+    });
+  }
+
   await ctx.reply(t(lang, "anyTextWelcome"), { ...mainMenu(lang, s.is_registered) });
 });
 
