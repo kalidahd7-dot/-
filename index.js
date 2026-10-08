@@ -119,15 +119,21 @@ function clearSession(uid) { sessions.delete(String(uid)); }
 
 /* ============ Reply Keyboard (أزرار ثابتة أسفل الشاشة) ============ */
 function replyKeyboard() {
-  return Markup.keyboard([
-    [
-      Markup.button.webApp("📖 المقرأة", MINI_APP_URL)
-    ],
-    [
-      Markup.button.text("📋 القائمة"),
-      Markup.button.text("👤 حسابي")
-    ]
-  ]).resize();
+  return {
+    reply_markup: {
+      keyboard: [
+        [
+          { text: "📖 المقرأة", web_app: { url: MINI_APP_URL } }
+        ],
+        [
+          { text: "📋 القائمة" },
+          { text: "👤 حسابي" }
+        ]
+      ],
+      resize_keyboard: true,
+      is_persistent: true
+    }
+  };
 }
 
 /* ============ Inline Menus ============ */
@@ -153,16 +159,21 @@ function mainMenu(lang, registered) {
 
 /* ============ Start ============ */
 bot.start(async (ctx) => {
-  const s = await getStudent(ctx);
-  const lang = langOf(s);
-  await ctx.reply(t(lang, "welcome", { name: s.first_name }), {
-    parse_mode: "HTML",
-    ...replyKeyboard()
-  });
-  await ctx.reply(t(lang, "homeWelcome"), {
-    parse_mode: "HTML",
-    ...mainMenu(lang, s.is_registered)
-  });
+  try {
+    const s = await getStudent(ctx);
+    const lang = langOf(s);
+    await ctx.reply(t(lang, "welcome", { name: s.first_name }), {
+      parse_mode: "HTML"
+    });
+    await ctx.reply(t(lang, "homeWelcome"), {
+      parse_mode: "HTML",
+      ...mainMenu(lang, s.is_registered)
+    });
+    await ctx.reply("📌 استخدم الأزرار أدناه للتنقل السريع:", replyKeyboard());
+  } catch (err) {
+    console.error("Start error:", err);
+    await ctx.reply("⚠️ حدث خطأ مؤقت. حاول مرة أخرى.");
+  }
 });
 
 /* ============ Language ============ */
@@ -923,7 +934,7 @@ bot.command("broadcast", async (ctx) => {
   await ctx.reply(t("ar", "adminBroadcastSent", { count }));
 });
 
-/* ============ Generic text ============ */
+/* ============ Generic text (يأتي في النهاية) ============ */
 bot.on("text", async (ctx) => {
   const text = ctx.message.text.trim();
   const s = await getStudent(ctx);
