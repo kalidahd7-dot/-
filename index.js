@@ -13,7 +13,6 @@ const app = express();
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const PORT = process.env.PORT || 3000;
 const ADMIN_GROUP_ID = process.env.ADMIN_GROUP_ID;
-const MINI_APP_URL = "https://t.me/meqraa_imamaljezery_bot/quran_academy";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -119,21 +118,12 @@ function clearSession(uid) { sessions.delete(String(uid)); }
 
 /* ============ Reply Keyboard (أزرار ثابتة أسفل الشاشة) ============ */
 function replyKeyboard() {
-  return {
-    reply_markup: {
-      keyboard: [
-        [
-          { text: "📖 المقرأة", web_app: { url: MINI_APP_URL } }
-        ],
-        [
-          { text: "📋 القائمة" },
-          { text: "👤 حسابي" }
-        ]
-      ],
-      resize_keyboard: true,
-      is_persistent: true
-    }
-  };
+  return Markup.keyboard([
+    [
+      Markup.button.text("📋 القائمة"),
+      Markup.button.text("👤 حسابي")
+    ]
+  ]).resize();
 }
 
 /* ============ Inline Menus ============ */
@@ -169,10 +159,9 @@ bot.start(async (ctx) => {
       parse_mode: "HTML",
       ...mainMenu(lang, s.is_registered)
     });
-    await ctx.reply("📌 استخدم الأزرار أدناه للتنقل السريع:", replyKeyboard());
+    await ctx.reply("📌 للتنقل السريع استخدم الأزرار أدناه:", replyKeyboard());
   } catch (err) {
     console.error("Start error:", err);
-    await ctx.reply("⚠️ حدث خطأ مؤقت. حاول مرة أخرى.");
   }
 });
 
@@ -934,7 +923,7 @@ bot.command("broadcast", async (ctx) => {
   await ctx.reply(t("ar", "adminBroadcastSent", { count }));
 });
 
-/* ============ Generic text (يأتي في النهاية) ============ */
+/* ============ Generic text ============ */
 bot.on("text", async (ctx) => {
   const text = ctx.message.text.trim();
   const s = await getStudent(ctx);
@@ -967,7 +956,6 @@ bot.on("text", async (ctx) => {
 /* ============ Errors ============ */
 bot.catch((err, ctx) => {
   console.error("Bot Error:", err);
-  try { ctx.reply("⚠️ حدث خطأ مؤقت."); } catch {}
 });
 
 /* ============ Web ============ */
