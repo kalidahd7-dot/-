@@ -8,6 +8,12 @@ const locales = require("./locales");
 const schedules = require("./schedules");
 
 /* =========================================================
+   WEB APP URL (تمت إضافته هنا)
+========================================================= */
+
+const WEB_APP_URL = "https://mqr-lmm-ljzxy-llqx-nljz-bland.onrender.com";
+
+/* =========================================================
    ENV CHECK
 ========================================================= */
 
@@ -475,12 +481,20 @@ function languageMenu() {
 }
 
 /* =========================================================
-   MAIN MENU
+   MAIN MENU (تمت إضافة زر التطبيق هنا)
 ========================================================= */
 
 function mainMenu(lang, registered) {
 
   const rows = [];
+
+  // ✅ زر فتح التطبيق المصغر
+  rows.push([
+    Markup.button.webApp(
+      "📖 فتح التطبيق",
+      WEB_APP_URL
+    )
+  ]);
 
   if (!registered) {
 
@@ -565,7 +579,6 @@ function mainMenu(lang, registered) {
 
 /* =========================================================
    TELEGRAM COMMANDS
-   هذا هو الجزء الذي كان ناقصًا
 ========================================================= */
 
 async function setupBotCommands() {
@@ -631,9 +644,14 @@ async function setupBotCommands() {
 
     ]);
 
+    // ✅ تعديل زر القائمة ليفتح التطبيق المصغر
     await bot.telegram.setChatMenuButton({
       menuButton: {
-        type: "commands"
+        type: "web_app",
+        text: "📖 المقرأة",
+        web_app: {
+          url: WEB_APP_URL
+        }
       }
     });
 
